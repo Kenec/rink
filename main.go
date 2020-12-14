@@ -1,13 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/txn2/txeh"
 	"log"
-	"net/url"
 	"net/http"
 	"net/http/httputil"
-	"flag"
+	"net/url"
 	"os"
 )
 func main(){
@@ -16,6 +16,7 @@ func main(){
 
 	domain := flag.String("domain", "", "domain name to add to /etc/hosts")
 	port := flag.String("port", "", "PORT on which the application is running on!")
+	tls	:= flag.Bool("tls", false, "Set TLS/SSL for the domain")
 	flag.Parse()
 
 	if *domain == "" || *port == "" {
@@ -31,7 +32,7 @@ func main(){
 	hosts.AddHost("127.0.0.1", *domain)
 	hosts.Save()
 
-	//TODO: check if the user set the SSL to TRUE. In which case, form the URL with https.
+	// form the full url
 	fullDomain := "http://" + *domain + ":" + *port
 
 
@@ -44,7 +45,13 @@ func main(){
 
 	proxy := httputil.NewSingleHostReverseProxy(local)
 	http.Handle("/", &ProxyHandler{proxy})
-	err = http.ListenAndServe(":80", nil)
+
+	if *tls == true {
+		err = http.ListenAndServeTLS(":443", "server.crt", "server.key", nil )
+	} else {
+		err = http.ListenAndServe(":80", nil)
+	}
+
 	if err != nil {
 		panic(err)
 	}
